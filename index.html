@@ -85,13 +85,49 @@
             margin: 0 auto;
         }
 
+        .profile-img-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+
         .profile-img {
             width: 200px;
             height: 200px;
             border-radius: 50%;
             border: 5px solid #007bff;
-            margin-bottom: 2rem;
             object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        .profile-upload-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,123,255,0.3);
+        }
+
+        .profile-upload-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+
+        .edit-mode .profile-upload-btn {
+            display: block;
+        }
+
+        #profileUpload {
+            display: none;
         }
 
         .hero h1 {
@@ -616,14 +652,154 @@
             padding: 1rem;
             margin: 1rem 0;
         }
+
+        /* Profile Upload Modal */
+        .profile-upload-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-upload-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .profile-upload-content h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #f8f9fa;
+            border-color: #0056b3;
+        }
+
+        .upload-area.drag-over {
+            background: #e3f2fd;
+            border-color: #0056b3;
+        }
+
+        .profile-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 1rem auto;
+            object-fit: cover;
+            border: 3px solid #007bff;
+        }
+
+        .upload-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Password Modal */
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .password-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
     </style>
 </head>
 <body>
     <!-- Save Indicator -->
     <div id="saveIndicator" class="save-indicator">Auto-saved ✓</div>
 
+    <!-- Password Modal -->
+    <div id="passwordModal" class="password-modal">
+        <div class="password-content">
+            <h3>🔒 Admin Access Required</h3>
+            <p>Enter password to access edit mode:</p>
+            <input type="password" id="passwordInput" class="password-input" placeholder="Enter password">
+            <div class="upload-buttons">
+                <button onclick="checkPassword()" class="btn btn-primary btn-small">Unlock</button>
+                <button onclick="closePasswordModal()" class="btn btn-secondary btn-small">Cancel</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                💡 Hint: Your birth year + "data" + IIT Kanpur establishment year
+            </p>
+        </div>
+    </div>
+
+    <!-- Profile Upload Modal -->
+    <div id="profileUploadModal" class="profile-upload-modal">
+        <div class="profile-upload-content">
+            <h3>📷 Update Profile Picture</h3>
+            <div class="upload-area" onclick="document.getElementById('profileUpload').click()">
+                <div>
+                    <p>🖼️ Click here or drag & drop your photo</p>
+                    <p style="font-size: 0.9rem; color: #666;">Supported: JPG, PNG, GIF (Max 5MB)</p>
+                </div>
+            </div>
+            <input type="file" id="profileUpload" accept="image/*" style="display: none;">
+            <img id="profilePreview" class="profile-preview" style="display: none;">
+            <div class="upload-buttons">
+                <button onclick="updateProfilePicture()" class="btn btn-primary btn-small" id="updateBtn" style="display: none;">Update Picture</button>
+                <button onclick="closeProfileUploadModal()" class="btn btn-secondary btn-small">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Admin Toggle Button -->
-    <button id="adminToggle" class="admin-toggle" onclick="toggleEditMode()" title="Toggle Edit Mode">✏️</button>
+    <button id="adminToggle" class="admin-toggle" onclick="requestAdminAccess()" title="Admin Access">🔒</button>
 
     <!-- Header -->
     <header>
@@ -646,7 +822,10 @@
     <section id="home" class="hero">
         <div class="container">
             <div class="hero-content">
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMTAwIiBmaWxsPSIjZTNmMmZkIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNjAiIGZpbGw9IiMwMDdiZmYiPkE8L3RleHQ+Cjwvc3ZnPg==" alt="Profile Picture" class="profile-img" id="profileImg">
+                <div class="profile-img-container">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMTAwIiBmaWxsPSIjZTNmMmZkIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNjAiIGZpbGw9IiMwMDdiZmYiPlI8L3RleHQ+Cjwvc3ZnPg==" alt="Profile Picture" class="profile-img" id="profileImg">
+                    <button class="profile-upload-btn" onclick="openProfileUploadModal()" title="Change Profile Picture">📷</button>
+                </div>
                 <h1 class="editable" data-field="name">Rishabh Pandey</h1>
                 <p class="subtitle editable" data-field="subtitle">Aspiring Data Scientist | GenAI & ML Engineering Enthusiast | GATE AIR 4 Achiever</p>
                 <div class="cta-buttons">
@@ -704,8 +883,7 @@
                         </div>
                         <div class="experience-duration editable" data-field="exp1_duration">Aug 2024 - Present</div>
                     </div>
-                    <div class="experience-description editable" data-field="exp1_desc">As the Department Placement Coordinator, I am responsible for managing corporate partnerships and facilitating student placements. My role involves direct interaction with companies, inviting them for the upcoming placement season, and exploring new corporate connections to expand placement opportunities. Additionally, I support coordination efforts for placement-related events and help maintain communication between the department and industry partners.
-</div>
+                    <div class="experience-description editable" data-field="exp1_desc">As the Department Placement Coordinator, I am responsible for managing corporate partnerships and facilitating student placements. My role involves direct interaction with companies, inviting them for the upcoming placement season, and exploring new corporate connections to expand placement opportunities. Additionally, I support coordination efforts for placement-related events and help maintain communication between the department and industry partners.</div>
                 </div>
                 
                 <div class="experience-item">
@@ -716,584 +894,56 @@
                         </div>
                         <div class="experience-duration editable" data-field="exp2_duration">July 2021 - Sep 2023</div>
                     </div>
-                    <div class="experience-description editable" data-field="exp2_desc">Worked in the Defence & Aeronautical segment, leading the development of high-performance technical fabrics tailored for strategic applications. My role involved extensive data-driven decision-making to optimize product quality and manufacturing efficiency. Leveraged ERP systems and advanced Excel tools to analyze production workflows, reduce costs, and improve process transparency.
-A key part of my work included analyzing spectral data, such as color reflectance, to optimize IRR (Infrared Reflectance) values—an essential requirement for defense textiles.</div>
+                    <div class="experience-description editable" data-field="exp2_desc">Worked in the Defence & Aeronautical segment, leading the development of high-performance technical fabrics tailored for strategic applications. My role involved extensive data-driven decision-making to optimize product quality and manufacturing efficiency. Leveraged ERP systems and advanced Excel tools to analyze production workflows, reduce costs, and improve process transparency. A key part of my work included analyzing spectral data, such as color reflectance, to optimize IRR (Infrared Reflectance) values—an essential requirement for defense textiles.</div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Projects Section -->
-    <section id="projects" class="section">
-        <div class="container">
-            <h2>Projects</h2>
-            <div class="section-content">
-                <div class="projects-grid">
-                    <div class="project-card">
-                        <div class="project-title editable" data-field="proj1_title">RAG-based Chatbot for Product Development</div>
-                        <div class="project-description editable" data-field="proj1_desc">Built an intelligent chatbot for Product Development team using 800+ technical fabric articles (1467 variants). Processed 1.5 crore rows from 28 Excel files to help PD team with parachute, defense, industrial, auto, and sportswear fabric development. Complete end-to-end pipeline with data cleaning, feature engineering, and intelligent retrieval system.</div>
-                        <div class="project-tech">
-                            <span class="tech-tag">LangChain</span>
-                            <span class="tech-tag">Python</span>
-                            <span class="tech-tag">Pandas</span>
-                            <span class="tech-tag">Sentence Transformers</span>
-                            <span class="tech-tag">Weaviate</span>
-                            <span class="tech-tag">Azure API</span>
-                        </div>
-                        <div class="project-links">
-                            <a href="#" class="editable" data-field="proj1_live">Live Demo</a>
-                            <a href="https://github.com/rishabhiitk" class="editable" data-field="proj1_github">GitHub</a>
-                        </div>
+<section id="projects" class="section">
+    <div class="container">
+        <h2>Projects</h2>
+        <div class="section-content">
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-title editable" data-field="proj1_title">RAG-based Chatbot for Product Development</div>
+                    <div class="project-description editable" data-field="proj1_desc">
+                        Built an intelligent chatbot for Product Development team using 800+ technical fabric articles (1467 variants). Processed 1.5 crore rows from 28 Excel files to help PD team with parachute, defense, industrial, auto, and sportswear fabric development. Complete end-to-end pipeline with data cleaning, feature engineering, and intelligent retrieval system.
                     </div>
-                    
-                    <div class="project-card">
-                        <div class="project-title editable" data-field="proj2_title">Crime Rate Prediction</div>
-                        <div class="project-description editable" data-field="proj2_desc">Built a regression model to analyze the influence of socio-economic factors on crime rates. Conducted data preprocessing, feature selection, and utilized Python libraries for statistical modeling and analysis to derive actionable insights.</div>
-                        <div class="project-tech">
-                            <span class="tech-tag">Python</span>
-                            <span class="tech-tag">NumPy</span>
-                            <span class="tech-tag">Statsmodels</span>
-                            <span class="tech-tag">Scikit-learn</span>
-                        </div>
-                        <div class="project-links">
-                            <a href="#" class="editable" data-field="proj2_live">Live Demo</a>
-                            <a href="https://github.com/rishabhiitk" class="editable" data-field="proj2_github">GitHub</a>
-                        </div>
+                    <div class="project-tech">
+                        <span class="tech-tag">LangChain</span>
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Pandas</span>
+                        <span class="tech-tag">Sentence Transformers</span>
+                        <span class="tech-tag">Weaviate</span>
+                        <span class="tech-tag">Azure API</span>
                     </div>
-                    
-                    <div class="project-card">
-                        <div class="project-title editable" data-field="proj3_title">Breast Cancer Prediction</div>
-                        <div class="project-description editable" data-field="proj3_desc">Developed a machine learning model for predicting breast cancer diagnosis using XGBoost classifier. Achieved high accuracy in distinguishing between benign and malignant tumors with comprehensive evaluation metrics and feature importance analysis.</div>
-                        <div class="project-tech">
-                            <span class="tech-tag">Python</span>
-                            <span class="tech-tag">XGBoost</span>
-                            <span class="tech-tag">Scikit-learn</span>
-                            <span class="tech-tag">ROC-AUC</span>
-                        </div>
-                        <div class="project-links">
-                            <a href="#" class="editable" data-field="proj3_live">Live Demo</a>
-                            <a href="https://github.com/rishabhiitk" class="editable" data-field="proj3_github">GitHub</a>
-                        </div>
+                    <div class="project-links">
+                        <a href="https://github.com/rishabhpandey9/rag-chatbot" target="_blank">GitHub</a>
+                        <a href="https://www.linkedin.com/in/rishabhpandey9/" target="_blank">LinkedIn</a>
                     </div>
+                    <img src="images/rag-chatbot-demo.png" alt="RAG Chatbot Demo" class="project-image">
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Skills Section -->
-    <section id="skills" class="section">
-        <div class="container">
-            <h2>Skills</h2>
-            <div class="section-content">
-                <div class="skills-grid">
-                    <div class="skill-category">
-                        <h3>Programming Languages</h3>
-                        <div class="skill-item">
-                            <span>Python</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>SQL</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>R</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 75%"></div>
-                            </div>
-                        </div>
+                <!-- Example of another project card -->
+                <div class="project-card">
+                    <div class="project-title editable" data-field="proj2_title">Spectral Data Analysis for Defense Textiles</div>
+                    <div class="project-description editable" data-field="proj2_desc">
+                        Developed a spectral analysis pipeline to optimize IRR (Infrared Reflectance) values for defense textile products. Automated data extraction from ERP and Excel, performed advanced statistical analysis, and visualized results for product teams.
                     </div>
-                    
-                    <div class="skill-category">
-                        <h3>Machine Learning</h3>
-                        <div class="skill-item">
-                            <span>Scikit-learn</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Deep Learning</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 80%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Generative AI</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
+                    <div class="project-tech">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Excel</span>
+                        <span class="tech-tag">Matplotlib</span>
+                        <span class="tech-tag">ERP Integration</span>
                     </div>
-                    
-                    <div class="skill-category">
-                        <h3>Data Analysis</h3>
-                        <div class="skill-item">
-                            <span>NumPy</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Pandas</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Statistical Analysis</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 85%"></div>
-                            </div>
-                        </div>
+                    <div class="project-links">
+                        <a href="https://github.com/rishabhpandey9/spectral-analysis" target="_blank">GitHub</a>
                     </div>
-                    
-                    <div class="skill-category">
-                        <h3>Tools & Platforms</h3>
-                        <div class="skill-item">
-                            <span>Power BI</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 80%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Excel</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 90%"></div>
-                            </div>
-                        </div>
-                        <div class="skill-item">
-                            <span>Git</span>
-                            <div class="skill-bar">
-                                <div class="skill-progress" style="width: 75%"></div>
-                            </div>
-                        </div>
-                    </div>
+                    <img src="images/spectral-analysis-demo.png" alt="Spectral Analysis Demo" class="project-image">
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Education Section -->
-    <section id="education" class="section">
-        <div class="container">
-            <h2>Education</h2>
-            <div class="section-content">
-                <div class="education-item">
-                    <div class="education-degree editable" data-field="edu1_degree">Master of Technology - M.Tech, Management Sciences (formerly IME)</div>
-                    <div class="education-school editable" data-field="edu1_school">Indian Institute of Technology, Kanpur</div>
-                    <div class="education-duration editable" data-field="edu1_duration">2024 - Present</div>
-                    <div class="education-grade editable" data-field="edu1_grade">Current CGPA: 8.05/10 (Up to First Semester)</div>
-                </div>
-                
-                <div class="education-item">
-                    <div class="education-degree editable" data-field="edu2_degree">Bachelor of Technology - B.Tech, Textile Chemistry</div>
-                    <div class="education-school editable" data-field="edu2_school">Nitra Technical Campus, Ghaziabad</div>
-                    <div class="education-duration editable" data-field="edu2_duration">2017 - 2021</div>
-                    <div class="education-grade editable" data-field="edu2_grade">CGPA: 8.26/10</div>
-                </div>
-                
-                <div class="education-item">
-                    <div class="education-degree editable" data-field="edu3_degree">Higher Secondary Education - UP Board</div>
-                    <div class="education-school editable" data-field="edu3_school">Rani Laxmi Bai Smarak Inter College</div>
-                    <div class="education-duration editable" data-field="edu3_duration">2015</div>
-                    <div class="education-grade editable" data-field="edu3_grade">Percentage: 78.8%</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Blog Section -->
-    <section id="blog" class="section">
-        <div class="container">
-            <h2>Blog</h2>
-            <div class="section-content">
-                <div class="blog-post">
-                    <div class="blog-title">Coming Soon</div>
-                    <div class="blog-content">Blog posts will be available here soon. Stay tuned for insights on data science, machine learning, and AI!</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="section">
-        <div class="container">
-            <h2>Contact Me</h2>
-            <div class="section-content">
-                <div class="contact-content">
-                    <div class="contact-info">
-                        <h3>Get In Touch</h3>
-                        <div class="contact-item">
-                            <div class="contact-icon">📧</div>
-                            <div>
-                                <div class="editable" data-field="email1">rishabhp24@iitk.ac.in</div>
-                                <div class="editable" data-field="email2">rishudrp@gmail.com</div>
-                            </div>
-                        </div>
-                        <div class="contact-item">
-                            <div class="contact-icon">📱</div>
-                            <div class="editable" data-field="phone">+91 7985647101</div>
-                        </div>
-                        <div class="contact-item">
-                            <div class="contact-icon">📍</div>
-                            <div class="editable" data-field="location">IIT Kanpur, Kanpur, UP, India</div>
-                        </div>
-                        <div class="social-links">
-                            <a href="https://www.linkedin.com/in/rishabh-pandey-6939051aa/" class="social-link" target="_blank">💼</a>
-                            <a href="https://github.com/rishabhiitk" class="social-link" target="_blank">🐙</a>
-                            <a href="#" class="social-link" target="_blank">🐦</a>
-                            <a href="#" class="social-link" target="_blank">📷</a>
-                        </div>
-                    </div>
-                    <div class="contact-form">
-                        <h3>Send Message</h3>
-                        <form id="contactForm">
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input type="text" id="name" name="name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" name="email" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="subject">Subject</label>
-                                <input type="text" id="subject" name="subject" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="message">Message</label>
-                                <textarea id="message" name="message" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Send Message</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- GitHub Instructions Modal (Hidden by default) -->
-    <div id="instructionsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; color: white; overflow-y: auto;">
-        <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; color: black; border-radius: 10px;">
-            <h2>🚀 GitHub Pages Setup Instructions</h2>
-            <div class="github-instructions">
-                <h3>1. Edit Your Website</h3>
-                <p>Click the edit button (✏️) in bottom right to enable edit mode. Click on any text to edit it directly!</p>
-                
-                <h3>2. Save Your Changes</h3>
-                <p>Your changes are automatically saved in the browser. To make them permanent on GitHub:</p>
-                
-                <h3>3. Update GitHub Repository</h3>
-                <ol>
-                    <li>Right-click anywhere on the page and select "View Page Source"</li>
-                    <li>Copy the entire HTML code</li>
-                    <li>Go to your GitHub repository</li>
-                    <li>Edit the index.html file</li>
-                    <li>Replace the content with your copied code</li>
-                    <li>Commit the changes</li>
-                </ol>
-                
-                <h3>4. Alternative Method (Easier)</h3>
-                <p>Use the "Download HTML" button below to save the file, then upload it to your GitHub repository.</p>
-                
-                <button onclick="downloadHTML()" class="btn btn-primary" style="margin: 10px 5px;">📥 Download Updated HTML</button>
-                <button onclick="exportData()" class="btn btn-secondary" style="margin: 10px 5px;">💾 Export Data Only</button>
-                <button onclick="closeInstructions()" class="btn btn-secondary" style="margin: 10px 5px;">❌ Close</button>
+                <!-- Add more project cards as needed -->
             </div>
         </div>
     </div>
-
-    <script>
-        // Simple data storage in HTML
-        let websiteData = {
-            name: "Rishabh Pandey",
-            subtitle: "Aspiring Data Scientist | GenAI & ML Engineering Enthusiast | GATE AIR 4 Achiever",
-            about: "Passionate data enthusiast currently pursuing M.Tech in Management Sciences (formerly known as Industrial and Management Engineering) at IIT Kanpur with a CGPA of 8.05 (up to first semester). With hands-on experience as a Product Development Engineer and recent summer internship at Kusumgar Corporates, I bring a unique blend of technical expertise and practical industry knowledge to the data science domain.<br><br>My journey includes developing a sophisticated RAG-based Chatbot for Product Development teams, processing 1.5 crore rows of data across 1467 technical fabric articles. With expertise in Python, SQL, LangChain, and advanced ML techniques, I've successfully built end-to-end data pipelines and intelligent systems for real-world applications.<br><br>Currently serving as Department Placement Coordinator (DPC) at IIT Kanpur, I'm actively pursuing my passion for becoming a data scientist and GenAI enthusiast. As a GATE 2024 AIR 4 achiever, I demonstrate excellence in analytical thinking and problem-solving.",
-            stat1: "25", stat2: "AIR 4", stat3: "8.05", stat4: "1.5Cr",
-            exp1_title: "Department Placement Coordinator (DPC)",
-            exp1_company: "Department of Management Sciences, IIT Kanpur",
-            exp1_duration: "2024 - Present",
-            exp1_desc: "Leading placement activities and corporate relations for the department. Managing recruitment processes, organizing placement drives, coordinating with companies, and facilitating industry-academia partnerships to enhance placement opportunities for students.",
-            exp2_title: "Summer Intern - Product Development",
-            exp2_company: "Kusumgar Corporates Pvt Ltd",
-            exp2_duration: "Summer 2024",
-            exp2_desc: "Developed RAG-based Chatbot for Product Development team. Processed 1.5 crore rows of data from 28 Excel files, built complete data pipeline using LangChain, and created intelligent system to assist PD team in fabric development process for defense, industrial, and sports applications.",
-            proj1_title: "RAG-based Chatbot for Product Development",
-            proj1_desc: "Built an intelligent chatbot for Product Development team using 800+ technical fabric articles (1467 variants). Processed 1.5 crore rows from 28 Excel files to help PD team with parachute, defense, industrial, auto, and sportswear fabric development. Complete end-to-end pipeline with data cleaning, feature engineering, and intelligent retrieval system.",
-            proj1_live: "#", proj1_github: "https://github.com/rishabhiitk",
-            proj2_title: "Crime Rate Prediction",
-            proj2_desc: "Built a regression model to analyze the influence of socio-economic factors on crime rates. Conducted data preprocessing, feature selection, and utilized Python libraries for statistical modeling and analysis to derive actionable insights.",
-            proj2_live: "#", proj2_github: "https://github.com/rishabhiitk",
-            proj3_title: "Breast Cancer Prediction",
-            proj3_desc: "Developed a machine learning model for predicting breast cancer diagnosis using XGBoost classifier. Achieved high accuracy in distinguishing between benign and malignant tumors with comprehensive evaluation metrics and feature importance analysis.",
-            proj3_live: "#", proj3_github: "https://github.com/rishabhiitk",
-            edu1_degree: "Master of Technology - M.Tech, Management Sciences (formerly IME)",
-            edu1_school: "Indian Institute of Technology, Kanpur",
-            edu1_duration: "2024 - Present",
-            edu1_grade: "Current CGPA: 8.05/10 (Up to First Semester)",
-            edu2_degree: "Bachelor of Technology - B.Tech, Textile Chemistry",
-            edu2_school: "Nitra Technical Campus, Ghaziabad",
-            edu2_duration: "2017 - 2021",
-            edu2_grade: "CGPA: 8.26/10",
-            edu3_degree: "Higher Secondary Education - UP Board",
-            edu3_school: "Rani Laxmi Bai Smarak Inter College",
-            edu3_duration: "2015",
-            edu3_grade: "Percentage: 78.8%",
-            email1: "rishabhp24@iitk.ac.in",
-            email2: "rishabh.personal@gmail.com",
-            phone: "+91 7985647101",
-            location: "IIT Kanpur, Kanpur, UP, India"
-        };
-
-        let editMode = false;
-
-        // Load saved data
-        function loadData() {
-            const savedData = localStorage.getItem('portfolioData');
-            if (savedData) {
-                websiteData = { ...websiteData, ...JSON.parse(savedData) };
-                updateDisplayedContent();
-            }
-        }
-
-        // Save data
-        function saveData() {
-            localStorage.setItem('portfolioData', JSON.stringify(websiteData));
-            showSaveIndicator();
-        }
-
-        // Update displayed content
-        function updateDisplayedContent() {
-            document.querySelectorAll('.editable').forEach(element => {
-                const field = element.getAttribute('data-field');
-                if (websiteData[field]) {
-                    if (element.tagName === 'A') {
-                        element.href = websiteData[field];
-                        if (websiteData[field] !== '#') {
-                            element.textContent = websiteData[field].includes('github') ? 'GitHub' : 
-                                                 websiteData[field].includes('demo') ? 'Live Demo' : 
-                                                 element.textContent;
-                        }
-                    } else {
-                        element.innerHTML = websiteData[field];
-                    }
-                }
-            });
-        }
-
-        // Toggle edit mode
-        function toggleEditMode() {
-            editMode = !editMode;
-            const button = document.getElementById('adminToggle');
-            
-            if (editMode) {
-                button.innerHTML = '💾';
-                button.title = 'Save & Exit Edit Mode';
-                enableEditMode();
-                showNotification('Edit mode enabled! Click on any text to edit.', 'success');
-            } else {
-                button.innerHTML = '✏️';
-                button.title = 'Toggle Edit Mode';
-                disableEditMode();
-                saveData();
-                showNotification('Changes saved!', 'success');
-            }
-        }
-
-        // Enable edit mode
-        function enableEditMode() {
-            document.querySelectorAll('.editable').forEach(element => {
-                element.classList.add('edit-mode');
-                element.addEventListener('click', makeEditable);
-            });
-        }
-
-        // Disable edit mode
-        function disableEditMode() {
-            document.querySelectorAll('.editable').forEach(element => {
-                element.classList.remove('edit-mode');
-                element.removeEventListener('click', makeEditable);
-            });
-        }
-
-        // Make element editable
-        function makeEditable(event) {
-            event.preventDefault();
-            const element = event.target;
-            const field = element.getAttribute('data-field');
-            const currentValue = websiteData[field] || element.textContent;
-            
-            let input;
-            if (element.tagName === 'A') {
-                input = document.createElement('input');
-                input.type = 'url';
-                input.value = element.href === window.location.href + '#' ? '' : element.href;
-                input.placeholder = 'Enter URL (e.g., https://github.com/username)';
-            } else if (currentValue.length > 100) {
-                input = document.createElement('textarea');
-                input.value = currentValue.replace(/<br>/g, '\n');
-                input.rows = 4;
-            } else {
-                input = document.createElement('input');
-                input.type = 'text';
-                input.value = currentValue;
-            }
-            
-            input.className = 'inline-edit';
-            
-            function saveEdit() {
-                let newValue = input.value;
-                if (element.tagName === 'A') {
-                    websiteData[field] = newValue || '#';
-                    element.href = newValue || '#';
-                    if (newValue && newValue !== '#') {
-                        element.textContent = newValue.includes('github') ? 'GitHub' : 
-                                             newValue.includes('demo') || newValue.includes('live') ? 'Live Demo' : 
-                                             'Link';
-                    }
-                } else {
-                    if (input.tagName === 'TEXTAREA') {
-                        newValue = newValue.replace(/\n/g, '<br>');
-                    }
-                    websiteData[field] = newValue;
-                    element.innerHTML = newValue;
-                }
-                element.parentNode.replaceChild(element, input);
-                saveData();
-            }
-            
-            input.addEventListener('blur', saveEdit);
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    saveEdit();
-                }
-            });
-            
-            element.parentNode.replaceChild(input, element);
-            input.focus();
-            input.select();
-        }
-
-        // Show save indicator
-        function showSaveIndicator() {
-            const indicator = document.getElementById('saveIndicator');
-            indicator.style.display = 'block';
-            setTimeout(() => {
-                indicator.style.display = 'none';
-            }, 2000);
-        }
-
-        // Show notification
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-        }
-
-        // Download HTML file
-        function downloadHTML() {
-            const htmlContent = document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'index.html';
-            a.click();
-            URL.revokeObjectURL(url);
-            showNotification('HTML file downloaded! Upload this to your GitHub repository.', 'success');
-        }
-
-        // Export data
-        function exportData() {
-            const dataStr = JSON.stringify(websiteData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'portfolio-data.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            showNotification('Data exported successfully!', 'success');
-        }
-
-        // Show instructions
-        function showInstructions() {
-            document.getElementById('instructionsModal').style.display = 'block';
-        }
-
-        // Close instructions
-        function closeInstructions() {
-            document.getElementById('instructionsModal').style.display = 'none';
-        }
-
-        // Contact form handling
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            showNotification('Message functionality coming soon! Please use email for now.', 'success');
-            this.reset();
-        });
-
-        // Show instructions on first visit
-        window.addEventListener('load', function() {
-            loadData();
-            if (!localStorage.getItem('instructionsShown')) {
-                setTimeout(showInstructions, 2000);
-                localStorage.setItem('instructionsShown', 'true');
-            }
-        });
-
-        // Auto-save every 30 seconds if in edit mode
-        setInterval(function() {
-            if (editMode) {
-                saveData();
-            }
-        }, 30000);
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'e') {
-                    e.preventDefault();
-                    toggleEditMode();
-                } else if (e.key === 's') {
-                    e.preventDefault();
-                    if (editMode) {
-                        saveData();
-                        showNotification('Data saved!', 'success');
-                    }
-                } else if (e.key === 'h') {
-                    e.preventDefault();
-                    showInstructions();
-                }
-            }
-        });
-
-        // Add help text
-        document.addEventListener('DOMContentLoaded', function() {
-            const helpText = document.createElement('div');
-            helpText.style.cssText = 'position: fixed; bottom: 90px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; max-width: 200px; z-index: 999;';
-            helpText.innerHTML = '💡 <strong>Quick Tips:</strong><br>• Ctrl+E: Toggle edit mode<br>• Ctrl+S: Save changes<br>• Ctrl+H: Show help';
-            document.body.appendChild(helpText);
-            
-            setTimeout(() => {
-                helpText.style.opacity = '0';
-                helpText.style.transition = 'opacity 1s';
-                setTimeout(() => helpText.remove(), 1000);
-            }, 5000);
-        });
-    </script>
-</body>
-</html>
+</section>
